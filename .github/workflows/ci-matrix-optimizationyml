@@ -1,0 +1,161 @@
+Name: ci-matrix-optimization 
+
+ 
+
+On: 
+
+  Push: 
+
+    Branches: [ main ] 
+
+ 
+
+# 1. CONCURRENCY: Si se hace un nuevo push, se abortan automáticamente los jobs viejos encolados 
+
+Concurrency: 
+
+  Group: ${{ github.workflow }}-${{ github.ref }} 
+
+  Cancel-in-progress: true 
+
+ 
+
+Jobs: 
+
+  # REUTILIZACIÓN LÓGICA: Separamos la matriz en su propio Job paralelizado 
+
+  Matrix_build: 
+
+    Name: matrix-build 
+
+    # PARALELIZACIÓN: Múltiples plataformas dinámicas corriendo en paralelo 
+
+    Runs-on: ${{ matrix.os }} 
+
+    Strategy: 
+
+      Fail-fast: false # Evita que el fallo de una plataforma tire abajo las demás 
+
+      # MATRIX: Configuración de entornos de ejecución cruzados 
+
+      Matrix: 
+
+        Os: [ubuntu-latest, windows-latest] 
+
+        Runtime: [18, 20] 
+
+        # INCLUDE/EXCLUDE: Reglas corporativas de inclusión y exclusión 
+
+        Include: 
+
+Os: ubuntu-latest 
+
+            Runtime: 22 
+
+            Experimental: true 
+
+        Exclude: 
+
+Os: windows-latest 
+
+            Runtime: 18 
+
+ 
+
+    Steps: 
+
+Name: checkout-code 
+
+        Uses: actions/checkout@v4.1.7 
+
+ 
+
+Name: setup-node-runtime 
+
+        Uses: actions/setup-node@v4.0.3 
+
+        With: 
+
+          Node-version: ${{ matrix.runtime }} 
+
+ 
+
+      # 2. CACHE: Mecanismo para no re-descargar dependencias entre ejecuciones 
+
+Name: cache-dependencies 
+
+        Uses: actions/cache@v4.0.2 
+
+        With: 
+
+          Path: ~/.npm 
+
+          Key: ${{ runner.os }}-node-${{ hashFiles(‘**/package.json’) }} 
+
+          Restore-keys: | 
+
+            ${{ runner.os }}-node- 
+
+ 
+
+Name: simulate-build-and-test 
+
+        Run: | 
+
+          Echo “Compilando en plataforma: ${{ matrix.os }}” 
+
+          Echo “Usando versión de Runtime: ${{ matrix.runtime }}” 
+
+          Mkdir -p build-outputs 
+
+          Echo “Log de auditoría para ${{ matrix.os }}-v${{ matrix.runtime }}” > build-outputs/log-${{ matrix.os }}-${{ matrix.runtime }}.txt 
+
+ 
+
+      # 3. ARTIFACTS: Subida de artefactos generados por la matriz 
+
+Name: upload-matrix-artifacts 
+
+        Uses: actions/upload-artifact@v4.3.4 
+
+        With: 
+
+          Name: build-artifact-${{ matrix.os }}-${{ matrix.runtime }} 
+
+          Path: build-outputs/ 
+
+          Retention-days: 1 
+
+ 
+
+  # JOB DE REPORTING: Corre al final para consolidar los resultados 
+
+  Generate_report: 
+
+    Name: generate-markdown-summary 
+
+    Needs: [matrix_build] 
+
+    Runs-on: ubuntu-latest 
+
+    If: always() # Se ejecuta aunque la matriz falle, para garantizar el reporte 
+
+    Steps: 
+
+      # 4. SUMMARIES MARKDOWN: Inyección de reporte visual en la interfaz de GitHub 
+
+Name: create-markdown-summary 
+
+        Run: | 
+
+          Echo “### GlobalFin Corporate Pipeline Summary” >> $GITHUB_STEP_SUMMARY 
+
+          Echo “#### Optimización e Ingeniería de Rendimiento” >> $GITHUB_STEP_SUMMARY 
+
+          Echo “- **Control de Concurrencia:** Habilitado (`cancel-in-progress: true`) ” >> $GITHUB_STEP_SUMMARY 
+
+          Echo “- **Estrategia de Caché:** Capa de persistencia activa para redes híbridas ” >> $GITHUB_STEP_SUMMARY 
+
+          Echo “- **Paralelización:** Matriz expandida cruzando múltiples Sistemas Operativos y Runtimes con éxito.” >> $GITHUB_STEP_SUMMARY 
+
+          Echo “Análisis de optimización cerrado en fecha: $(date)” >> $GITHUB_STEP_SUMMARY 
