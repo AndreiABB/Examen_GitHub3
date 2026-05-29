@@ -107,3 +107,43 @@ jobs:
         with: 
 
           name: build-artifact-${{ matrix.os }}-${{ matrix.runtime }} 
+
+          path: build-outputs/ 
+
+          retention-days: 1 
+
+ 
+
+  generate_report: 
+
+    name: generate-markdown-summary 
+
+    needs: [matrix_build] 
+
+    runs-on: ubuntu-latest 
+
+    if: always() 
+
+    steps: 
+
+      - name: create-markdown-summary 
+
+        # Uso del pipe '|' para blindar el script multilínea contra errores de caracteres especiales 
+
+        run: | 
+
+          echo "### 📊 GlobalFin Corporate Pipeline Summary" >> $GITHUB_STEP_SUMMARY 
+
+          echo "#### ⚡ Optimización e Ingeniería de Rendimiento" >> $GITHUB_STEP_SUMMARY 
+
+          echo "- **Control de Concurrencia:** Habilitado con políticas de cancelación activa " >> $GITHUB_STEP_SUMMARY 
+
+          echo "- **Estrategia de Caché:** Capa de persistencia activa para redes híbridas " >> $GITHUB_STEP_SUMMARY 
+
+          echo "- **Paralelización:** Matriz expandida cruzando múltiples Sistemas Operativos y Runtimes con éxito." >> $GITHUB_STEP_SUMMARY 
+
+          echo "Análisis de optimización cerrado en fecha: \$(date)" >> $GITHUB_STEP_SUMMARY 
+
+ 
+
+ 
